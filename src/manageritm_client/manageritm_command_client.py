@@ -7,8 +7,11 @@ class ManagerITMCommandClient(ManagerITMClient):
     def __init__(self, manageritm_uri):
         super().__init__(manageritm_uri)
 
-    def client(self, env=None, additional_env=None):
+    def client(self, command=None, env=None, additional_env=None):
         data = {}
+
+        if command is not None:
+            data["command"] = command
 
         if env is not None:
             data["env"] = env

@@ -175,6 +175,81 @@ class TestClient:
         assert client._uri == self.base_uri
         assert client._client_id == expected_response_data["client_id"]
 
+    def test_proxy_client_set_additional_flags(self, requests_mock):
+        """user can send additional command line options/flags for the proxy"""
+
+        # setup expected data and mocks
+        expected_request_data = {
+            "additional_flags": ["--opt1", "value1", "--opt2", "value2"]
+        }
+        expected_response_status = 200
+        expected_response_data = {
+            "client_id": str(uuid.uuid4()),
+            "command": ["/usr/bin/some_command", "-a"]
+            + expected_request_data["additional_flags"],
+        }
+        mock = requests_mock.post(
+            f"{self.base_uri}/client/proxy",
+            status_code=expected_response_status,
+            json=expected_response_data,
+        )
+        requests_mock.get(
+            f"{self.base_uri}/{expected_response_data['client_id']}/status",
+            status_code=200,
+            json={"status": None},
+        )
+
+        # call the function under test
+        client = ManagerITMProxyClient(self.base_uri)
+        actual_response_data = client.client(
+            additional_flags=expected_request_data["additional_flags"]
+        )
+
+        # check that we sent the correct request to the server
+        history = mock.request_history[0]
+        assert history.method == "POST"
+        assert DeepDiff(history.json(), expected_request_data) == {}
+
+        # check that we return the correct data we get from the server
+        assert actual_response_data == expected_response_data
+        assert client._uri == self.base_uri
+        assert client._client_id == expected_response_data["client_id"]
+
+    def test_command_client_set_command(self, requests_mock):
+        """user can create command client with a custom command"""
+
+        # setup expected data and mocks
+        expected_request_data = {"command": ["sleep", "200000000000"]}
+        expected_status = 200
+        expected_response_data = {
+            "command": expected_request_data["command"],
+            "client_id": str(uuid.uuid4()),
+        }
+        mock = requests_mock.post(
+            f"{self.base_uri}/client/command",
+            status_code=expected_status,
+            json=expected_response_data,
+        )
+        requests_mock.get(
+            f"{self.base_uri}/{expected_response_data['client_id']}/status",
+            status_code=200,
+            json={"status": None},
+        )
+
+        # call the function under test
+        client = ManagerITMCommandClient(self.base_uri)
+        actual_response_data = client.client(command=expected_request_data["command"])
+
+        # check that we sent the correct request to the server
+        history = mock.request_history[0]
+        assert history.method == "POST"
+        assert DeepDiff(history.json(), expected_request_data) == {}
+
+        # check that we return the correct data we get from the server
+        assert actual_response_data == expected_response_data
+        assert client._uri == self.base_uri
+        assert client._client_id == expected_response_data["client_id"]
+
     def test_command_client_default_environment(self, requests_mock):
         """user can create command client with the default environment"""
 
